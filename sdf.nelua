@@ -1,0 +1,21 @@
+global sdf = @record{}
+
+function sdf.circle(p: vec2, radius: number): number
+  return #p - radius
+end
+
+function sdf.box(p: vec2, radius: vec2): (number, number)
+  local q = p:abs() - radius
+  local u
+  if q.x < q.y then
+    u = (p.x + radius.x)
+  else
+    u = (p.y + radius.y)
+  end
+  local d = #(vec2.max(q,vec2{0,0})) + math.min(math.max(q.x,q.y), 0)
+  return d, u
+end
+
+function sdf.oprep(p: vec2, s: number)
+  return ((p+s*0.5) % s) - s * 0.5
+end

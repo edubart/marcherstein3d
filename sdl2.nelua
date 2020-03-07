@@ -1,0 +1,107 @@
+-- import SDL headers
+## cdefine 'SDL_DISABLE_IMMINTRIN_H'
+## cdefine 'SDL_MAIN_HANDLED'
+## cinclude '<SDL2/SDL.h>'
+## linklib 'SDL2'
+
+-- import SDL types
+global SDL_Keysym <cimport,nodecl> = @record {
+  scancode: cint,
+  sym: int32,
+  mod: uint16,
+  unused: uint32
+}
+global SDL_KeyboardEvent <cimport,nodecl> = @record {
+  type: uint32,
+  timestamp: uint32,
+  windowID: uint32,
+  state: uint8,
+  repeated: uint8,
+  padding: uint16,
+  keysym: SDL_Keysym
+}
+global SDL_PixelFormat <cimport,nodecl> = @record{
+  format: uint32
+}
+global SDL_Surface <cimport,nodecl> = @record{
+  flags: uint32,
+  format: SDL_PixelFormat*,
+  w: cint,
+  h: cint,
+  pitch: cint,
+  pixels: pointer
+}
+global SDL_Event <cimport,nodecl> = @record{type: uint32, padding: array(byte, 56)}
+global SDL_Rect <cimport,nodecl> = @record{x: cint, y: cint, w: cint, h: cint}
+global SDL_Window <cimport,nodecl> = @record{}
+global SDL_Renderer <cimport,nodecl> = @record{}
+global SDL_Texture <cimport,nodecl> = @record{}
+
+-- import SDL constants
+global SDL_INIT_VIDEO: uint32 <cimport,nodecl>
+global SDL_WINDOWPOS_UNDEFINED: cint <cimport,nodecl>
+global SDL_WINDOW_RESIZABLE: uint32 <cimport,nodecl>
+global SDL_WINDOW_OPENGL: uint32 <cimport,nodecl>
+global SDL_QUIT: uint32 <cimport,nodecl>
+global SDL_KEYDOWN: uint32 <cimport,nodecl>
+global SDLK_UP: int32 <cimport,nodecl>
+global SDLK_DOWN: int32 <cimport,nodecl>
+global SDLK_LEFT: int32 <cimport,nodecl>
+global SDLK_RIGHT: int32 <cimport,nodecl>
+
+global SDL_SCANCODE_UP: int32 <cimport,nodecl>
+global SDL_SCANCODE_DOWN: int32 <cimport,nodecl>
+global SDL_SCANCODE_LEFT: int32 <cimport,nodecl>
+global SDL_SCANCODE_RIGHT: int32 <cimport,nodecl>
+global SDL_SCANCODE_A: int32 <cimport,nodecl>
+global SDL_SCANCODE_W: int32 <cimport,nodecl>
+global SDL_SCANCODE_S: int32 <cimport,nodecl>
+global SDL_SCANCODE_D: int32 <cimport,nodecl>
+global SDL_SCANCODE_E: int32 <cimport,nodecl>
+global SDL_SCANCODE_Q: int32 <cimport,nodecl>
+global SDL_SCANCODE_UNKNOWN: int32 <cimport,nodecl>
+global SDLK_ESCAPE: int32 <cimport,nodecl>
+global SDL_PIXELFORMAT_ARGB8888: uint32 <cimport,nodecl>
+global SDL_PIXELFORMAT_RGB888: uint32 <cimport,nodecl>
+global SDL_BLENDMODE_NONE: int32 <cimport,nodecl>
+global SDL_RENDERER_ACCELERATED: uint32 <cimport,nodecl>
+global SDL_RENDERER_PRESENTVSYNC: uint32 <cimport,nodecl>
+global SDL_RENDERER_SOFTWARE: uint32 <cimport,nodecl>
+global SDL_TEXTUREACCESS_STREAMING: cint <cimport,nodecl>
+
+-- import SDL functions
+global function SDL_Init(flags: uint32): int32 <cimport,nodecl> end
+global function SDL_CreateWindow(title: cstring, x: cint, y: cint, w: cint, h: cint, flags: uint32): SDL_Window* <cimport,nodecl> end
+global function SDL_Quit() <cimport,nodecl> end
+global function SDL_DestroyWindow(window: SDL_Window*) <cimport,nodecl> end
+global function SDL_PollEvent(event: SDL_Event*): int32 <cimport,nodecl> end
+global function SDL_GetTicks(): uint32 <cimport,nodecl> end
+global function SDL_Delay(ms: uint32) <cimport,nodecl> end
+global function SDL_CreateRGBSurfaceWithFormatFrom(pixels: pointer, width: cint, height: cint, depth: cint, pitch: cint,format: uint32): SDL_Surface* <cimport,nodecl> end
+global function SDL_FreeSurface(surface: SDL_Surface*) <cimport,nodecl> end
+global function SDL_LockSurface(surface: SDL_Surface*) <cimport,nodecl> end
+global function SDL_UnlockSurface(surface: SDL_Surface*) <cimport,nodecl> end
+global function SDL_GetWindowSurface(window: SDL_Window*): SDL_Surface* <cimport,nodecl> end
+global function SDL_BlitSurface(src: SDL_Surface*, srcrect: SDL_Rect*, dst: SDL_Surface*, dstrect: SDL_Rect*): cint <cimport,nodecl> end
+global function SDL_SetSurfaceBlendMode(surface: SDL_Surface*, blendMode: int32): cint <cimport,nodecl> end
+global function SDL_UpdateWindowSurface(window: SDL_Window*) <cimport,nodecl> end
+global function SDL_CreateRenderer(window: SDL_Window*, index: cint, flags: uint32): SDL_Renderer* <cimport,nodecl> end
+global function SDL_DestroyRenderer(renderer: SDL_Renderer*) <cimport,nodecl> end
+global function SDL_RenderPresent(renderer: SDL_Renderer*) <cimport,nodecl> end
+global function SDL_RenderClear(renderer: SDL_Renderer*) <cimport,nodecl> end
+global function SDL_CreateTexture(renderer: SDL_Renderer*, format: uint32, access: cint, w: cint, h: cint): SDL_Texture* <cimport,nodecl> end
+global function SDL_DestroyTexture(texture: SDL_Texture*) <cimport,nodecl> end
+global function SDL_RenderCopy(renderer: SDL_Renderer*, texture: SDL_Texture*, srcrect: SDL_Rect*, dstrect: SDL_Rect*): cint <cimport,nodecl> end
+global function SDL_LockTexture(texture: SDL_Texture*, rect: SDL_Rect*, pixels: pointer*, pitch: cint*): cint <cimport,nodecl> end
+global function SDL_UnlockTexture(texture: SDL_Texture*) <cimport,nodecl> end
+global function SDL_SetRenderDrawBlendMode(renderer: SDL_Renderer*, blendMode: int32): cint <cimport,nodecl> end
+global function SDL_SetTextureBlendMode(texture: SDL_Texture*, blendMode: int32): cint <cimport,nodecl> end
+global function SDL_UpdateTexture(texture: SDL_Texture*, rect: SDL_Rect*, pixels: pointer, pitch: cint): cint <cimport,nodecl> end
+global function SDL_GetError(): cstring <cimport,nodecl> end
+global function SDL_SetHint(name: cstring, value: cstring): int32 <cimport,nodecl> end
+global function SDL_ConvertPixels(width: cint, height: cint, src_format: uint32, src: pointer, src_pitch: cint, dst_format: uint32, dst: pointer, dst_pitch: cint): cint <cimport,nodecl> end
+global function SDL_GetPixelFormatName(format: uint32): cstring <cimport,nodecl> end
+
+-- keyboard
+global function SDL_GetKeyboardState(numkeys: cint*): uint8* <cimport,nodecl> end
+global function SDL_GetScancodeFromName(name: cstring): int32 <cimport,nodecl> end

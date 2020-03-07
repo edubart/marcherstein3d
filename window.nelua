@@ -1,0 +1,95 @@
+global Window = @record {
+  window: SDL_Window*,
+  surface: SDL_Surface*,
+  keystate: uint8[0]*,
+  pixelformat: uint32,
+  width: integer,
+  height: integer,
+  pitch: integer,
+  ticks: uint32,
+  lastticks: uint32,
+  fps: integer,
+  quit: boolean
+}
+
+function Window.create(width: integer, height: integer): Window
+  local self: Window
+
+  ## if not PLATFORM_WEB then
+    SDL_SetHint('SDL_FRAMEBUFFER_ACCELERATION', '0')
+  ## end
+
+  SDL_Init(SDL_INIT_VIDEO)
+
+  self.window = SDL_CreateWindow("An SDL2 Window",
+    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    (@cint)(width), (@cint)(height), 0)
+  assert(self.window, "Could not create window")
+  self.surface = SDL_GetWindowSurface(self.window)
+  self.keystate = (@uint8[0]*)(SDL_GetKeyboardState(nilptr))
+  self.height = height
+  self.width = width
+  self.ticks = SDL_GetTicks()
+  self.lastticks = self.ticks
+  return self
+end
+
+function Window:destroy()
+  SDL_DestroyWindow(self.window)
+  SDL_Quit()
+end
+
+function Window:poll_events()
+  local event: SDL_Event
+  while SDL_PollEvent(event) ~= 0 do
+    switch event.type
+    case SDL_QUIT then
+      self.quit = true
+    case SDL_KEYDOWN then
+      local kevent = (@SDL_KeyboardEvent*)(&event)
+      switch kevent.keysym.sym
+      case SDLK_ESCAPE then
+        self.quit = true
+      end
+    end
+  end
+end
+
+function Window:can_use_surface_pixels(): boolean
+  return self.surface.format.format == SDL_PIXELFORMAT_RGB888 and self.surface.pitch == 4*self.width
+end
+
+function Window:lock_pixels(): pointer
+  SDL_LockSurface(self.surface)
+  return self.surface.pixels
+end
+
+function Window:unlock_pixels()
+  SDL_UnlockSurface(self.surface)
+end
+
+function Window:upload_pixels(pixels: argbcolor*)
+  SDL_LockSurface(self.surface)
+  SDL_ConvertPixels(self.surface.w, self.surface.h,
+                    SDL_PIXELFORMAT_RGB888, pixels, (@cint)(4*self.width),
+                    self.surface.format.format, self.surface.pixels, self.surface.pitch)
+  SDL_UnlockSurface(self.surface)
+end
+
+function Window:update_pixels()
+  SDL_UpdateWindowSurface(self.window)
+
+  self.ticks = SDL_GetTicks()
+  if self.ticks - self.lastticks >= 1000 then
+    print('FPS', self.fps)
+    self.lastticks = self.ticks
+    self.fps = 0
+  end
+  self.fps = self.fps + 1
+end
+
+function Window:is_key_down(keyname: stringview): boolean
+  local key = SDL_GetScancodeFromName(keyname)
+  if key == SDL_SCANCODE_UNKNOWN then return false end
+  return self.keystate[key] == 1
+end

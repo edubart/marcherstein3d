@@ -1,0 +1,81 @@
+##[[
+cflags "-I."
+cemit ([=[
+#define STBI_ONLY_PNG
+#define STBI_NO_STDIO
+#define STB_IMAGE_IMPLEMENTATION
+]=], 'declaration')
+cinclude '"thirdparty/stb_image.h"'
+]]
+
+require 'argbcolor'
+require 'vec2'
+
+local function stbi_loadf_from_memory(buffer: byte*, len: cint <autocast>,
+                         x: cint*, y: cint*, channels_in_file: cint*,
+                         desired_channels: cint): float32* <cimport,nodecl> end
+
+local IMAGE_SIZE: uinteger <comptime> = 64
+global Image = @record{
+  data: vec3[IMAGE_SIZE][IMAGE_SIZE]*,
+  mipmap32: vec3[32][32],
+  mipmap16: vec3[16][16],
+  mipmap8: vec3[8][8],
+  mipmap4: vec3[4][4],
+  mipmap2: vec3[2][2],
+  mipmap1: vec3[1][1],
+  width: integer,
+  height: integer
+}
+
+--[[
+local function bilinear_filter(quad: vec2[4]*, fu: number, fv: number)
+  local va = vec3.lerp(quad[0][0], self.data[0][1], fu)
+  local vb = vec3.lerp(self.data[v2][u1], self.data[v2][u2], fu)
+  local col = vec3.lerp(va, vb, fv)
+  return col
+end
+
+function Image:make_mipmaps()
+  local size = 64
+  repeat
+
+    size = size // 2
+  until size == 0
+end
+]]
+
+function Image.loadf(filedata: stringview)
+  local w: cint, h: cint, c: cint
+  local filedata: stringview = #[filedata]#
+  local data = stbi_loadf_from_memory((@byte*)(filedata.data), filedata.size, &w, &h, &c, 3)
+  local self = Image{data=(@vec3[IMAGE_SIZE][IMAGE_SIZE]*)(data),width=w,height=h}
+  --self:make_mipmaps()
+  return self
+end
+
+function Image:get_pixel(uv: vec2) <inline>
+  uv = uv:fract()*IMAGE_SIZE
+  --local u1, v1 = (@uinteger)(uv.x), (@uinteger)(uv.y)
+  --local u2, v2 = (u1+1_u) % IMAGE_SIZE, (v1+1_u) % IMAGE_SIZE
+  --local fu, fv = math.fract(uv.x), math.fract(uv.y)
+  --local va = vec3.lerp(self.data[v1][u1], self.data[v1][u2], fu)
+  --local vb = vec3.lerp(self.data[v2][u1], self.data[v2][u2], fu)
+  --local col = vec3.lerp(va, vb, fv)
+  --return col
+  return self.data[(@uinteger)(uv.y)][(@uinteger)(uv.x)]
+end
+
+function Image:get_mipmap_pixel(uv: vec2, level: integer)
+  return self:get_pixel(uv)
+end
+
+global Images = @record{}
+##[[
+local fs = require 'nelua.utils.fs'
+local imagelist = {'bricks'}
+]]
+
+## for _,name in ipairs(imagelist) do
+  global Images.#|name|#: Image = Image.loadf(#[fs.readfile('sprites/'..name..'.png')]#)
+## end

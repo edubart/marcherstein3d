@@ -1,0 +1,55 @@
+global Camera = @record{
+  left_corner: vec2,
+  horizontal: vec2,
+  vertical: vec2,
+  origin: vec2,
+  lookat: vec2,
+  u: vec2,
+  w: vec2,
+  vfov: number,
+  height: number,
+  aspect: number
+}
+
+function Camera:update()
+  local theta = self.vfov*math.pi/180
+  local half_height = math.tan(theta/2)
+  local half_width = self.aspect * half_height
+  self.w = vec2.unit(self.lookat - self.origin)
+  self.u = {x=self.w.y, y=-self.w.x}
+  self.left_corner = - self.u * half_width + self.w
+  self.horizontal = self.u * (2*half_width)
+  self.height = 2*half_height
+end
+
+function Camera.create(lookfrom: vec2, lookat: vec2,
+                       vfov: number, aspect: number): Camera
+  local self = Camera{
+    origin = lookfrom,
+    lookat = lookat,
+    vfov = vfov,
+    aspect = aspect,
+  }
+  self:update()
+  return self
+end
+
+function Camera:get_direction(u: number)
+  return (self.left_corner + self.horizontal * u):unit()
+end
+
+function Camera:rotate(theta: number)
+  local dir = self.lookat - self.origin
+  dir = vec2.rotate(dir, theta)
+  self.lookat = self.origin + dir
+  self:update()
+end
+
+function Camera:translate(x: number, y: number)
+  local trans = vec2{0,0}
+  trans = trans + self.u *  x
+  trans = trans + self.w *  y
+  self.origin = self.origin + trans
+  self.lookat = self.lookat + trans
+  self:update()
+end

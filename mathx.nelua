@@ -1,0 +1,45 @@
+require 'math'
+
+function math.clamp(x: number, min: number, max: number): number <inline,nosideeffect>
+  return math.max(math.min(x, max), min)
+end
+
+function math.fract(x: number): number <inline,nosideeffect>
+  return x - math.floor(x)
+end
+
+function math.fastsin(x: number): number <inline,nosideeffect>
+  x = x*(1.0/math.pi)
+  local xi = math.floor(x)
+  local xs = xi - 2*math.floor(0.5*x)
+  local xf = x - xi
+  return (1-2*xs)*(4*xf)*(1-xf)
+end
+
+function math.fastcos(x: number): number <inline,nosideeffect>
+  return math.fastsin(x + math.pi/2)
+end
+
+function math.fastatan(x: number) <inline,nosideeffect>
+  return (math.pi/4)*x - x*(math.abs(x) - 1)*(0.2447 + 0.0663*math.abs(x))
+end
+
+function math.fastatan2(y: number, x: number): number <inline,nosideeffect>
+  if x == 0 then
+    return 0
+  elseif x >= y then
+    if x >= -y then
+      return math.fastatan(y / x)
+    else
+      return -math.pi/2 - math.fastatan(x / y)
+    end
+  else
+    if x >= -y then
+      return math.pi/2 - math.fastatan(x / y)
+    elseif y >= 0.0 then
+      return math.pi + math.fastatan(y / x)
+    else
+      return -math.pi + math.fastatan(y / x)
+    end
+  end
+end

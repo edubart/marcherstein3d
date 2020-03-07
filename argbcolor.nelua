@@ -1,0 +1,17 @@
+require 'vec3'
+
+global argbcolor = @record{
+  b: byte,
+  g: byte,
+  r: byte,
+  a: byte
+}
+
+function argbcolor.fromvec3(col: vec3): argbcolor <inline>
+  return argbcolor{
+    (@uint8)(col.z*255),
+    (@uint8)(col.y*255),
+    (@uint8)(col.x*255),
+    255
+  }
+end

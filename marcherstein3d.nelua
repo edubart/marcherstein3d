@@ -1,0 +1,250 @@
+require 'config'
+require 'mathx'
+require 'vec3'
+require 'vec2'
+require 'sdf'
+require 'argbcolor'
+require 'sdl2'
+require 'camera'
+require 'window'
+require 'vector'
+require 'image'
+
+local SCREEN_WIDTH <comptime> = 960
+local SCREEN_HEIGHT <comptime> = 540
+local NUMSAMPLES <comptime> = 1
+local MAXDEPTH <comptime> = 4
+
+local worldsize: integer
+local cam: Camera
+local window: Window
+
+local materials: vec3[6] = {
+  {0.0, 0.0, 0.0},
+  {1.0, 0.1, 0.1},
+  {0.1, 1.0, 0.1},
+  {0.1, 0.1, 1.0},
+  {0.4, 0.4, 0.4},
+  {0.8, 0.8, 0.8},
+}
+
+local MaterialId = @uint32
+local Hit = @record{d: number, u: number, matid: MaterialId}
+local time: number
+
+local function map(p: vec2): Hit <inline>
+  local hitmatid: MaterialId = 0
+  local hitd: number = 1e32
+  local hitu: number
+  local d: number
+  local u: number
+  local walldistortion = math.fastsin(p.x*50)*math.fastsin(p.y*50)
+
+  ## local function check_hit(matid)
+    if d < hitd then
+      hitd = d
+      hitu = u
+      hitmatid = #[matid]#
+    end
+  ## end
+
+  do -- columns
+    local q = sdf.oprep(p, 10.0)
+    local w = 0.5 + walldistortion*0.003
+    d = sdf.circle(q, w)
+    ## check_hit(5)
+  end
+
+  do -- animated column
+    local q = p
+    local angle = math.fastatan2(q.y, q.x)
+    local w = math.fastsin(angle*30 + time*10)*0.05*(math.fastsin(time*2)+1)
+    d = sdf.box(q, vec2{1,1}) - w
+    d = d / 2
+    ## check_hit(2)
+  end
+
+  do -- walls
+    d, u = sdf.box(p, vec2{20,20})
+    d = -d
+    ## check_hit(4)
+  end
+
+  return Hit{hitd, hitu, hitmatid}
+end
+
+local function get_normal(p: vec2)
+    local eps <comptime> = 0.001
+    local a: vec2, b: vec2, c: vec2, d: vec2 = {eps, -eps}, {-eps, -eps}, {-eps, eps}, {eps, eps}
+    return vec2.unit(a*map(p + a).d +
+                     b*map(p + b).d +
+                     c*map(p + c).d +
+                     d*map(p + d).d)
+end
+
+
+local LIGHT1_DIR = (vec2{1.0, 1.0}):unit()
+local LIGHT1_COLOR = vec3{0.8,0.6,0.4}
+local LIGHT2_DIR = (vec2{-1.0, 1.0}):unit()
+local LIGHT2_COLOR = vec3{0.5, 0.8, 0.9}
+local LIGHT3_DIR = (vec2{0.0,-1.0}):unit()
+local LIGHT3_COLOR = vec3{0.3,0.2,0.2}
+
+local function get_material_color(uv: vec2, matid: MaterialId, level: integer)
+  local matcol
+  if matid == 2 then
+    matcol.x = (math.fastsin(time*4)+1)/2
+    matcol.y = (math.fastsin(time*2)+1)/2
+    matcol.z = (math.fastsin(time)+1)/2
+  elseif matid == 4 then
+    uv.x = uv.x/2
+    uv = uv * 2
+    matcol = Images.bricks:get_mipmap_pixel(uv, level)
+  else
+    matcol = materials[matid]
+  end
+  return matcol
+end
+
+local function get_light(p: vec2, matid: MaterialId): vec3
+  local n = get_normal(p)
+  local light1_diffuse = math.clamp(vec2.dot(n, LIGHT1_DIR), 0, 1)
+  local light2_diffuse = math.clamp(vec2.dot(n, LIGHT2_DIR), 0, 1)
+  local light3_diffuse = math.clamp(vec2.dot(n, LIGHT3_DIR), 0, 1)
+  local diffuse = LIGHT1_COLOR*light1_diffuse + LIGHT2_COLOR*light2_diffuse + LIGHT3_COLOR*light3_diffuse
+  return diffuse
+end
+
+local function ray_march(ro: vec2, rd: vec2): (number, vec2, number, MaterialId)
+  local SURF_DIST <comptime> = 0.01
+  local MAX_DIST <comptime> = 50.0
+  local MAX_STEPS <comptime> = 128
+  local t: number = 0
+  local matid: MaterialId = 0
+  local p: vec2
+  local u: number
+  for i=0,<MAX_STEPS do
+    p = ro + rd * t
+    local hit = map(p)
+    if hit.d < SURF_DIST then
+      matid = hit.matid
+      u = hit.u
+      break
+    end
+    t = t + hit.d
+    if t > MAX_DIST then
+      break
+    end
+  end
+  return t, p, u, matid
+end
+
+local pixelbuffer: argbcolor[SCREEN_WIDTH][SCREEN_HEIGHT]
+local function draw()
+  local pixels = &pixelbuffer
+  if window:can_use_surface_pixels() then
+    pixels = (@argbcolor[SCREEN_WIDTH][SCREEN_HEIGHT]*)(window:lock_pixels())
+  end
+
+  local TOPCOL1 = vec3{0.03, 0.03, 0.03}
+  local TOPCOL2 = vec3{0.03, 0.03, 0.1}
+  local BOTCOL1 = vec3{0.4, 0.4, 0.4}
+  local BOTCOL2 = vec3{0.3, 0.3, 0.3}
+  local SCREEN_HALFHEIGHT <comptime> = SCREEN_HEIGHT // 2
+  ## if OPENMP then cemit '#pragma omp parallel for' end
+  for y=0,SCREEN_HEIGHT-1 do
+    local col: argbcolor
+    if y < SCREEN_HALFHEIGHT then
+      local f = y/SCREEN_HALFHEIGHT
+      col = argbcolor.fromvec3(BOTCOL1:lerp(BOTCOL2, f))
+    else
+      local f = (y - SCREEN_HALFHEIGHT)/SCREEN_HALFHEIGHT
+      col = argbcolor.fromvec3(TOPCOL1:lerp(TOPCOL2, f))
+    end
+    local iy = SCREEN_HEIGHT - 1 - y
+    for x=0,SCREEN_WIDTH-1 do
+      pixels[iy][x] = col
+    end
+  end
+
+  ## if OPENMP then cemit '#pragma omp parallel for' end
+  for x=0,SCREEN_WIDTH-1 do
+    local ru = x / SCREEN_WIDTH
+    local dist, p, u, matid = ray_march(cam.origin, cam:get_direction(ru))
+    if matid > 0 then
+      local lightcol = get_light(p, matid)
+      local WALL_HEIGHT <comptime> = 3
+      local height = dist*cam.height
+      local heightfactor = math.clamp(WALL_HEIGHT / height, 0, 1)
+      local yoff = (@integer)((1 - heightfactor)/2*SCREEN_HEIGHT)
+      local heightinscreen = math.ceil(heightfactor * SCREEN_HEIGHT)
+      for y=yoff,SCREEN_HEIGHT-1-yoff do
+        local v = (y - yoff) / heightinscreen
+        local matcol = get_material_color(vec2{u,v}, matid, 0)
+        local col = matcol * lightcol
+        col = col:sqrt() -- gamma correction
+        col = col:clamp(0, 1)
+        pixels[SCREEN_HEIGHT - 1 - y][x] = argbcolor.fromvec3(col)
+      end
+    end
+  end
+
+  if window:can_use_surface_pixels() then
+    window:unlock_pixels()
+  else
+    window:upload_pixels(&pixels[0][0])
+  end
+  window:update_pixels()
+end
+
+local lastupdate = 0
+
+local function update()
+  if window.ticks - lastupdate < 10 then return end
+  lastupdate = window.ticks
+
+  window:poll_events()
+
+  local CAMERA_SPEED <comptime> = 0.03
+  local WALK_SPEED <comptime> = 0.09
+  local camchanged = false
+  if window:is_key_down('RIGHT') then cam:rotate(-CAMERA_SPEED) end
+  if window:is_key_down('LEFT') then cam:rotate(CAMERA_SPEED) end
+  if window:is_key_down('W') then cam:translate(0, WALK_SPEED) end
+  if window:is_key_down('S') then cam:translate(0, -WALK_SPEED) end
+  if window:is_key_down('A') then cam:translate(-WALK_SPEED, 0) end
+  if window:is_key_down('D') then cam:translate(WALK_SPEED, 0) end
+end
+
+local function init()
+  window = Window.create(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+  local lookfrom = vec2{5.0,5.0}
+  local lookat = vec2{0.0,0.0}
+  local vfov = 49
+  local aspect = SCREEN_WIDTH/SCREEN_HEIGHT
+  cam = Camera.create(lookfrom, lookat, vfov, aspect)
+end
+
+local function frame()
+  time = window.ticks / 1000
+  update()
+  draw()
+end
+
+local function run()
+## if PLATFORM_WEB then
+  emscripten_set_main_loop(frame, 0, 1)
+## else
+  repeat
+    frame()
+  until window.quit
+## end
+end
+
+local function terminate()
+  window:destroy()
+end
+init()
+run()
+terminate()

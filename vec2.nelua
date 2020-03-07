@@ -1,0 +1,95 @@
+require 'mathx'
+
+global vec2 = @record{
+  x: number,
+  y: number
+}
+## vec2.value.is_vec2 = true
+
+local is_vec2_or_arithmetic = #[concept(function(b)
+  return b.type.is_vec2 or b.type.is_arithmetic
+end)]#
+
+function vec2.__add(a: vec2, b: is_vec2_or_arithmetic): vec2 <inline,nosideeffect>
+  ## if b.type.is_arithmetic then
+    return vec2{a.x + b, a.y + b}
+  ## else
+    return vec2{a.x + b.x, a.y + b.y}
+  ## end
+end
+
+function vec2.__sub(a: vec2, b: is_vec2_or_arithmetic): vec2 <inline,nosideeffect>
+  ## if b.type.is_arithmetic then
+    return vec2{a.x - b, a.y - b}
+  ## else
+    return vec2{a.x - b.x, a.y - b.y}
+  ## end
+end
+
+function vec2.__mul(a: vec2, b: is_vec2_or_arithmetic): vec2 <inline,nosideeffect>
+  ## if b.type.is_arithmetic then
+    return vec2{a.x * b, a.y * b}
+  ## else
+    return vec2{a.x * b.x, a.y * b.y}
+  ## end
+end
+
+function vec2.__div(a: vec2, b: is_vec2_or_arithmetic): vec2 <inline,nosideeffect>
+  ## if b.type.is_arithmetic then
+    local k: number = 1 / b
+    return vec2{a.x * k, a.y * k}
+  ## else
+    return vec2{a.x / b.x, a.y / b.y}
+  ## end
+end
+
+function vec2.__mod(a: vec2, b: is_vec2_or_arithmetic): vec2 <inline,nosideeffect>
+  ## if b.type.is_arithmetic then
+    return vec2{a.x % b, a.y % b}
+  ## else
+    return vec2{a.x % b.x, a.y % b.y}
+  ## end
+end
+
+function vec2.__unm(a: vec2): vec2 <inline,nosideeffect>
+  return vec2{-a.x, -a.y}
+end
+
+function vec2.__len(v: vec2): number <inline,nosideeffect>
+  return math.sqrt(v.x*v.x + v.y*v.y)
+end
+
+function vec2.dot(a: vec2, b: vec2): number <inline,nosideeffect>
+  return a.x*b.x + a.y*b.y
+end
+
+function vec2.sqrt(a: vec2): vec2 <inline,nosideeffect>
+  return vec2{math.sqrt(a.x), math.sqrt(a.y)}
+end
+
+function vec2.unit(v: vec2): vec2 <inline,nosideeffect>
+  return v / #v
+end
+
+function vec2.abs(a: vec2): vec2 <inline,nosideeffect>
+  return vec2{math.abs(a.x), math.abs(a.y)}
+end
+
+function vec2.max(a: vec2, b: vec2): vec2 <inline,nosideeffect>
+  return vec2{math.max(a.x, b.x), math.max(a.y, b.y)}
+end
+
+function vec2.clamp(v: vec2, min: number, max: number): vec2 <inline,nosideeffect>
+  return vec2{math.max(math.min(v.x, max), min),
+              math.max(math.min(v.y, max), min)}
+end
+
+function vec2.fract(v: vec2): vec2 <inline,nosideeffect>
+  return vec2{math.fract(v.x),
+              math.fract(v.y)}
+end
+
+function vec2.rotate(v: vec2, theta: number): vec2 <inline,nosideeffect>
+  local cost, sint = math.cos(theta), math.sin(theta)
+  return vec2{v.x*cost-v.y*sint, v.x*sint+v.y*cost}
+end
