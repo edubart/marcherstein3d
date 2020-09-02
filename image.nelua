@@ -1,17 +1,17 @@
 ##[[
 cflags "-I."
-cemit ([=[
+cemitdecl ([=[
 #define STBI_ONLY_PNG
 #define STBI_NO_STDIO
 #define STB_IMAGE_IMPLEMENTATION
-]=], 'declaration')
+]=])
 cinclude '"thirdparty/stb_image.h"'
 ]]
 
 require 'argbcolor'
 require 'vec2'
 
-local function stbi_loadf_from_memory(buffer: byte*, len: cint <autocast>,
+local function stbi_loadf_from_memory(buffer: byte*, len: cint,
                          x: cint*, y: cint*, channels_in_file: cint*,
                          desired_channels: cint): float32* <cimport,nodecl> end
 
