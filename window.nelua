@@ -1,7 +1,7 @@
 global Window = @record {
-  window: SDL_Window*,
-  surface: SDL_Surface*,
-  keystate: uint8[0]*,
+  window: *SDL_Window,
+  surface: *SDL_Surface,
+  keystate: *[0]uint8,
   pixelformat: uint32,
   width: integer,
   height: integer,
@@ -26,7 +26,7 @@ function Window.create(width: integer, height: integer): Window
     (@cint)(width), (@cint)(height), 0)
   assert(self.window, "Could not create window")
   self.surface = SDL_GetWindowSurface(self.window)
-  self.keystate = (@uint8[0]*)(SDL_GetKeyboardState(nilptr))
+  self.keystate = (@*[0]uint8)(SDL_GetKeyboardState(nilptr))
   self.height = height
   self.width = width
   self.ticks = SDL_GetTicks()
@@ -46,7 +46,7 @@ function Window:poll_events()
     case SDL_QUIT then
       self.quit = true
     case SDL_KEYDOWN then
-      local kevent = (@SDL_KeyboardEvent*)(&event)
+      local kevent = (@*SDL_KeyboardEvent)(&event)
       switch kevent.keysym.sym
       case SDLK_ESCAPE then
         self.quit = true
@@ -68,7 +68,7 @@ function Window:unlock_pixels()
   SDL_UnlockSurface(self.surface)
 end
 
-function Window:upload_pixels(pixels: argbcolor*)
+function Window:upload_pixels(pixels: *argbcolor)
   SDL_LockSurface(self.surface)
   SDL_ConvertPixels(self.surface.w, self.surface.h,
                     SDL_PIXELFORMAT_RGB888, pixels, (@cint)(4*self.width),

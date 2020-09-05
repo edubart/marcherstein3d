@@ -19,7 +19,7 @@ local worldsize: integer
 local cam: Camera
 local window: Window
 
-local materials: vec3[6] = {
+local materials: [6]vec3 = {
   {0.0, 0.0, 0.0},
   {1.0, 0.1, 0.1},
   {0.1, 1.0, 0.1},
@@ -139,11 +139,11 @@ local function ray_march(ro: vec2, rd: vec2): (number, vec2, number, MaterialId)
   return t, p, u, matid
 end
 
-local pixelbuffer: argbcolor[SCREEN_WIDTH][SCREEN_HEIGHT]
+local pixelbuffer: [SCREEN_HEIGHT][SCREEN_WIDTH]argbcolor
 local function draw()
   local pixels = &pixelbuffer
   if window:can_use_surface_pixels() then
-    pixels = (@argbcolor[SCREEN_WIDTH][SCREEN_HEIGHT]*)(window:lock_pixels())
+    pixels = (@*[SCREEN_HEIGHT][SCREEN_WIDTH]argbcolor)(window:lock_pixels())
   end
 
   local TOPCOL1 = vec3{0.03, 0.03, 0.03}

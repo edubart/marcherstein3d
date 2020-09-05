@@ -11,19 +11,19 @@ cinclude '"thirdparty/stb_image.h"'
 require 'argbcolor'
 require 'vec2'
 
-local function stbi_loadf_from_memory(buffer: byte*, len: cint,
-                         x: cint*, y: cint*, channels_in_file: cint*,
-                         desired_channels: cint): float32* <cimport,nodecl> end
+local function stbi_loadf_from_memory(buffer: *byte, len: cint,
+                         x: *cint, y: *cint, channels_in_file: *cint,
+                         desired_channels: cint): *float32 <cimport,nodecl> end
 
 local IMAGE_SIZE: uinteger <comptime> = 64
 global Image = @record{
-  data: vec3[IMAGE_SIZE][IMAGE_SIZE]*,
-  mipmap32: vec3[32][32],
-  mipmap16: vec3[16][16],
-  mipmap8: vec3[8][8],
-  mipmap4: vec3[4][4],
-  mipmap2: vec3[2][2],
-  mipmap1: vec3[1][1],
+  data: *[IMAGE_SIZE][IMAGE_SIZE]vec3,
+  mipmap32: [32][32]vec3,
+  mipmap16: [16][16]vec3,
+  mipmap8: [8][8]vec3,
+  mipmap4: [4][4]vec3,
+  mipmap2: [2][2]vec3,
+  mipmap1: [1][1]vec3,
   width: integer,
   height: integer
 }
@@ -48,8 +48,8 @@ end
 function Image.loadf(filedata: stringview)
   local w: cint, h: cint, c: cint
   local filedata: stringview = #[filedata]#
-  local data = stbi_loadf_from_memory((@byte*)(filedata.data), filedata.size, &w, &h, &c, 3)
-  local self = Image{data=(@vec3[IMAGE_SIZE][IMAGE_SIZE]*)(data),width=w,height=h}
+  local data = stbi_loadf_from_memory((@*byte)(filedata.data), filedata.size, &w, &h, &c, 3)
+  local self = Image{data=(@*[IMAGE_SIZE][IMAGE_SIZE]vec3)(data),width=w,height=h}
   --self:make_mipmaps()
   return self
 end
