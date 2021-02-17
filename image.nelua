@@ -45,9 +45,9 @@ function Image:make_mipmaps()
 end
 ]]
 
-function Image.loadf(filedata: stringview)
+function Image.loadf(filedata: string)
   local w: cint, h: cint, c: cint
-  local filedata: stringview = #[filedata]#
+  local filedata: string = #[filedata]#
   local data = stbi_loadf_from_memory((@*byte)(filedata.data), filedata.size, &w, &h, &c, 3)
   local self = Image{data=(@*[IMAGE_SIZE][IMAGE_SIZE]vec3)(data),width=w,height=h}
   --self:make_mipmaps()

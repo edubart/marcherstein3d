@@ -88,7 +88,7 @@ function Window:update_pixels()
   self.fps = self.fps + 1
 end
 
-function Window:is_key_down(keyname: stringview): boolean
+function Window:is_key_down(keyname: string): boolean
   local key = SDL_GetScancodeFromName(keyname)
   if key == SDL_SCANCODE_UNKNOWN then return false end
   return self.keystate[key] == 1
