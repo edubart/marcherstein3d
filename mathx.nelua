@@ -1,13 +1,5 @@
 require 'math'
 
-function math.clamp(x: number, min: number, max: number): number <inline,nosideeffect>
-  return math.max(math.min(x, max), min)
-end
-
-function math.fract(x: number): number <inline,nosideeffect>
-  return x - math.floor(x)
-end
-
 function math.fastsin(x: number): number <inline,nosideeffect>
   x = x*(1.0/math.pi)
   local xi = math.floor(x)
