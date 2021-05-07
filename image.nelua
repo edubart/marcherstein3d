@@ -1,10 +1,12 @@
 ##[[
 cflags "-I."
-cemitdecl ([=[
-#define STBI_ONLY_PNG
-#define STBI_NO_STDIO
-#define STB_IMAGE_IMPLEMENTATION
-]=])
+cdefine 'STB_IMAGE_STATIC'
+cdefine 'STBI_ONLY_PNG'
+cdefine 'STBI_NO_STDIO'
+cdefine 'STB_IMAGE_IMPLEMENTATION'
+if not ccinfo.is_gcc then
+  cdefine 'STBI_NO_SIMD'
+end
 cinclude '"thirdparty/stb_image.h"'
 ]]
 
